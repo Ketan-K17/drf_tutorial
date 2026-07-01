@@ -40,6 +40,7 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     # 3rd party
     "rest_framework",
+    "corsheaders",
     # local apps
     "books.apps.BooksConfig",
     "apis.apps.ApisConfig",
@@ -53,6 +54,7 @@ JAZZMIN_UI_TWEAKS = {
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
+    "corsheaders.middleware.CorsMiddleware", # keep the CorsMiddleware line above CommonMiddleware, always, order matters, not sure how or why though.
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
@@ -137,3 +139,29 @@ REST_FRAMEWORK = {
     "rest_framework.permissions.AllowAny",
     ],
 }
+
+CORS_ALLOWED_ORIGINS = (
+    "http://localhost:3000", # A potential React app's origin (3000 is its default port)
+    "http://localhost:8000", # Django's default port (not sure since origin matches in this case, but leave it here, no harm done)
+) 
+
+# about CORS (Cross-Origin Resource Sharing).
+
+# where is it applicable: It decides whether browser-side JS code (running on 
+# some page, at some origin) is allowed to READ the response of a cross-origin 
+# request. It's necessary that the client is a browser — no browser, no CORS check.
+
+# how the check works: the browser sends the request with an `Origin: <page's origin>` 
+# header. The server responds with `Access-Control-Allow-Origin: <...>`. The browser 
+# compares that header's value against the page's own origin. If it matches (or is `*`), 
+# JS is allowed to read the response. If not, the browser blocks JS from reading it.
+
+# note: for many requests (simple GET, basic POST), the request itself still fires and 
+# the server still processes it — it's only the *reading of the response* that gets 
+# blocked. For "non-simple" requests (custom headers, PUT/DELETE, JSON content-type 
+# in some cases), the browser sends a preflight OPTIONS request first, and if that 
+# preflight fails, the actual request is never sent at all.
+
+# It prevents evil sites from piggybacking on the cookies already sitting in your 
+# browser (for some other origin) to read the results of an authenticated query 
+# made on your behalf.
