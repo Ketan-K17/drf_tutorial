@@ -165,3 +165,85 @@ CORS_ALLOWED_ORIGINS = (
 # It prevents evil sites from piggybacking on the cookies already sitting in your 
 # browser (for some other origin) to read the results of an authenticated query 
 # made on your behalf.
+
+
+CSRF_TRUSTED_ORIGINS = ["http://localhost:3000"]
+# NOTE: about CSRF (Cross-Site Request Forgery) and protection against it.
+
+# any request that may change state on the server must be protected against CSRF.
+# the danger: an attacker's page can trick a victim's browser into firing such a
+# request, and cookies auto-attach regardless of which page triggered it — so the
+# server can't tell a legit request from a forged one by cookies alone.
+
+# defense: such requests must carry a CSRF token, proving the request originated
+# from a page that Django itself issued the token to (not a forged one).
+
+# CSRF_TRUSTED_ORIGINS: Django also checks that a request's Origin/Referer matches
+# an allowed origin, on top of the token. Since our frontend (localhost:3000) is a
+# different origin from Django (localhost:8000), it must be explicitly listed here,
+# or even a *correctly-tokened* request from it would be rejected.
+
+# NOTE: HOW CSRF TOKEN IS SHARED TO FRONTEND TO USE
+
+# ## 1. Traditional Django templates (server-rendered forms)
+
+# Django's template tag drops the token directly into the HTML:
+# ```html
+# <form method="post">
+#     {% csrf_token %}
+#     ...
+# </form>
+# ```
+# This renders as a hidden input:
+# ```html
+# <input type="hidden" name="csrfmiddlewaretoken" value="xY7...">
+# ```
+# The browser submits it automatically as part of the form — no JS needed to fetch it separately.
+
+# ## 2. Decoupled frontend (React/etc.) — the case relevant to your CORS setup
+
+# Here there's no server-rendered HTML for the token to sit in, so Django delivers it via a **cookie**. This is the standard flow:
+
+# **Step 1 — Django sets the cookie.** Any Django view that uses `django.middleware.csrf.CsrfViewMiddleware` (on by default) will set a `csrftoken` cookie on any response, *as long as something in the request cycle actually needs one* — typically triggered the first time the frontend hits any Django endpoint, or you can force it with a dedicated endpoint:
+
+# ```python
+# from django.middleware.csrf import get_token
+# from django.http import JsonResponse
+
+# def get_csrf_token(request):
+#     return JsonResponse({"csrfToken": get_token(request)})
+# ```
+# Calling `get_token(request)` guarantees Django sets the `csrftoken` cookie on the response, even if nothing else would have.
+
+# **Step 2 — Frontend reads the cookie** (JS can read it because it's not `HttpOnly` by default — Django deliberately leaves it readable so JS can grab it):
+# ```javascript
+# function getCookie(name) {
+#   const value = `; ${document.cookie}`;
+#   const parts = value.split(`; ${name}=`);
+#   if (parts.length === 2) return parts.pop().split(";").shift();
+# }
+
+# const csrfToken = getCookie("csrftoken");
+# ```
+
+# **Step 3 — Frontend sends it back as a header** on every state-changing request:
+# ```javascript
+# fetch("http://localhost:8000/api/transfer/", {
+#   method: "POST",
+#   headers: {
+#     "Content-Type": "application/json",
+#     "X-CSRFToken": csrfToken,
+#   },
+#   credentials: "include",  // needed to send/receive cookies cross-origin
+#   body: JSON.stringify({ amount: 100 }),
+# });
+# ```
+# Django's middleware checks the `X-CSRFToken` header against the token tied to the session — if it matches, request proceeds.
+
+# ## Why this isn't circular / why it's still secure
+
+# You might wonder: "if the token comes from a cookie, and cookies auto-attach... isn't the attacker's forged request going to have the cookie too?"
+
+# The key: the attacker's forged request *does* carry the `csrftoken` **cookie** (cookies auto-attach regardless of origin) — but the attacker's JS **cannot read that cookie's value** to put it in the `X-CSRFToken` **header**, because reading `document.cookie` from `evil-site.com` only gives you `evil-site.com`'s own cookies — cross-origin cookie reading isn't a thing browsers allow. So the forged request has the cookie, but is missing (or has a wrong) header — mismatch → rejected.
+
+# This pattern is literally called **"double submit cookie"** — the defense relies on the attacker being able to trigger a cookie-carrying request, but not being able to *read* that cookie's value to also stick it in a header/body field.
