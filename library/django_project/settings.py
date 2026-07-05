@@ -37,6 +37,7 @@ INSTALLED_APPS = [
     "apis.apps.ApisConfig",
     "todos.apps.TodosConfig",
     "accounts.apps.AccountsConfig",  # must come before admin/auth (it defines AUTH_USER_MODEL)
+    "posts.apps.PostsConfig",
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
