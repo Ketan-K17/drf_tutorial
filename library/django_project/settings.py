@@ -38,15 +38,24 @@ INSTALLED_APPS = [
     "todos.apps.TodosConfig",
     "accounts.apps.AccountsConfig",  # must come before admin/auth (it defines AUTH_USER_MODEL)
     "posts.apps.PostsConfig",
+
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    'django.contrib.sites',
+
     # 3rd party
     "rest_framework",
     "corsheaders",
+    "rest_framework.authtoken",
+    "allauth",
+    "allauth.account",
+    "allauth.socialaccount",
+    "dj_rest_auth",
+    "dj_rest_auth.registration",
 ]
 
 JAZZMIN_UI_TWEAKS = {
@@ -56,10 +65,11 @@ JAZZMIN_UI_TWEAKS = {
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
-    "corsheaders.middleware.CorsMiddleware", # keep the CorsMiddleware line above CommonMiddleware, always, order matters, not sure how or why though.
+    'corsheaders.middleware.CorsMiddleware', # keep the CorsMiddleware line above CommonMiddleware, always, order matters, not sure how or why though.
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
+    'allauth.account.middleware.AccountMiddleware',  # required by django-allauth; sits after AuthenticationMiddleware since it reads request.user
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
@@ -80,6 +90,10 @@ TEMPLATES = [
         },
     },
 ]
+
+EMAIL_BACKEND = "django.core.mail.backends.console.EmailBackend"
+
+SITE_ID = 1
 
 WSGI_APPLICATION = 'django_project.wsgi.application'
 
@@ -140,13 +154,28 @@ REST_FRAMEWORK = {
     "DEFAULT_PERMISSION_CLASSES": [
     "rest_framework.permissions.IsAuthenticated",
     ],
+    "DEFAULT_AUTHENTICATION_CLASSES": [
+        "rest_framework.authentication.SessionAuthentication", # session and basic authentication classes are the default setting. For proper token auth, you need to just swap out basic auth and replace with token auth class
+        # "rest_framework.authentication.BasicAuthentication",
+        "rest_framework.authentication.TokenAuthentication",
+    ],
 }
 
-# NOTE: There are actually four built-in project-level permissions settings we can use:
+# NOTE: PERMISSIONS: There are actually four built-in project-level permissions settings we can use:
 # AllowAny - any user, authenticated or not, has full access
 # IsAuthenticated - only authenticated, registered users have access
 # IsAdminUser - only admins/superusers have access
 # IsAuthenticatedOrReadOnly - unauthorized users can view any page, but only authenticated users have write, edit, or delete privileges
+
+# NOTE: AUTHENTICATION: There are many forms / mechanisms of authentication. The request / response flow for all of them are roughly the same.
+# 1. Client makes an HTTP request
+# 2. Server responds with an HTTP response containing a 401 (Unauthorized) status code and 'WWW-Authenticate' HTTP header with details on how to authorize (value of this header tells you what sort of auth to use... common values are 'Basic', 'Token')
+# 3. Client sends credentials back via the Authorization HTTP header
+# 4. Server checks credentials and responds with either 200 OK or 403 Forbidden status code
+
+# A few mechanisms discussed were - 1. Basic Authentication (using username and password) 2. Token Authentication (using a token) 3. Session Authentication (using a session ID). Of these token is the best for SPA's for several reasons. Read pg 139 onwards on book.
+
+# DRF comes with its 'TokenAuthentication' implementation of the API token, so we'll just use that here. It's deliberately basic.
 
 AUTH_USER_MODEL = "accounts.CustomUser" # when you want to override the default user model, you can do so here.
 
