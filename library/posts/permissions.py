@@ -20,3 +20,5 @@ class IsAuthorOrReadOnly(BasePermission):
 
 # has_permission() is called to check if the user has permission to access the view.
 # has_object_permission() is called to check what permissions the user has on a specific object.
+
+# NOTE: What we just controlled was Authorization, not Authentication. Authentication is the process of verifying who the user is, and Authorization is the process of verifying what the user is allowed to do.
