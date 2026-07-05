@@ -32,6 +32,11 @@ ALLOWED_HOSTS = []
 
 INSTALLED_APPS = [
     "jazzmin",
+    # local apps
+    "books.apps.BooksConfig",
+    "apis.apps.ApisConfig",
+    "todos.apps.TodosConfig",
+    "accounts.apps.AccountsConfig",  # must come before admin/auth (it defines AUTH_USER_MODEL)
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
@@ -41,10 +46,6 @@ INSTALLED_APPS = [
     # 3rd party
     "rest_framework",
     "corsheaders",
-    # local apps
-    "books.apps.BooksConfig",
-    "apis.apps.ApisConfig",
-    "todos.apps.TodosConfig",
 ]
 
 JAZZMIN_UI_TWEAKS = {
@@ -139,6 +140,8 @@ REST_FRAMEWORK = {
     "rest_framework.permissions.AllowAny",
     ],
 }
+
+AUTH_USER_MODEL = "accounts.CustomUser" # when you want to override the default user model, you can do so here.
 
 CORS_ALLOWED_ORIGINS = (
     "http://localhost:3000", # A potential React app's origin (3000 is its default port)
