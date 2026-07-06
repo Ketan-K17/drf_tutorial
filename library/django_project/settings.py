@@ -56,6 +56,7 @@ INSTALLED_APPS = [
     "allauth.socialaccount",
     "dj_rest_auth",
     "dj_rest_auth.registration",
+    "drf_spectacular",
 ]
 
 JAZZMIN_UI_TWEAKS = {
@@ -159,6 +160,7 @@ REST_FRAMEWORK = {
         # "rest_framework.authentication.BasicAuthentication",
         "rest_framework.authentication.TokenAuthentication",
     ],
+    "DEFAULT_SCHEMA_CLASS": "drf_spectacular.openapi.AutoSchema",
 }
 
 # NOTE: PERMISSIONS: There are actually four built-in project-level permissions settings we can use:
@@ -286,3 +288,10 @@ CSRF_TRUSTED_ORIGINS = ["http://localhost:3000"]
 # The key: the attacker's forged request *does* carry the `csrftoken` **cookie** (cookies auto-attach regardless of origin) — but the attacker's JS **cannot read that cookie's value** to put it in the `X-CSRFToken` **header**, because reading `document.cookie` from `evil-site.com` only gives you `evil-site.com`'s own cookies — cross-origin cookie reading isn't a thing browsers allow. So the forged request has the cookie, but is missing (or has a wrong) header — mismatch → rejected.
 
 # This pattern is literally called **"double submit cookie"** — the defense relies on the attacker being able to trigger a cookie-carrying request, but not being able to *read* that cookie's value to also stick it in a header/body field.
+
+SPECTACULAR_SETTINGS = {
+    "TITLE": "Blog API Project",
+    "DESCRIPTION": "A sample blog to learn about DRF",
+    "VERSION": "1.0.0",
+    # OTHER SETTINGS
+}
